@@ -78,5 +78,8 @@ VOLUME /var/log
 # increase agent timeout
 RUN sed -i "s/agent.task.timeout=900/agent.task.timeout=2000/" /etc/ambari-server/conf/ambari.properties
 
+#kerberos
+RUN yum install -y krb5-server krb5-libs krb5-auth-dialog krb5-workstation 
+
 EXPOSE 8080
 CMD ["/start-server"]

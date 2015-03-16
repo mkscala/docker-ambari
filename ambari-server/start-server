@@ -1,6 +1,9 @@
 #!/bin/bash
 
 : ${BRIDGE_IP:="172.17.42.1"}
+: ${REALM:=NODE.CONSUL}
+: ${DOMAIN_REALM:=node.consul}
+: ${KERB_MASTER_KEY:=masterkey}
 
 [[ "TRACE" ]] && set -x
 
@@ -26,8 +29,38 @@ start_ambari() {
   done
 }
 
+create_config() {
+  : ${KDC_ADDRESS:=$(hostname -f)}
+
+  cat>/etc/krb5.conf<<EOF
+[logging]
+ default = FILE:/var/log/krb5libs.log
+ kdc = FILE:/var/log/krb5kdc.log
+ admin_server = FILE:/var/log/kadmind.log
+
+[libdefaults]
+ default_realm = $REALM
+ dns_lookup_realm = false
+ dns_lookup_kdc = false
+ ticket_lifetime = 24h
+ renew_lifetime = 7d
+ forwardable = true
+
+[realms]
+ $REALM = {
+  kdc = $KDC_ADDRESS
+  admin_server = $KDC_ADDRESS
+ }
+
+[domain_realm]
+ .$DOMAIN_REALM = $REALM
+ $DOMAIN_REALM = $REALM
+EOF
+}
+
 main() {
   fix-nameserver
+  create_config
   start_ambari
   while true; do
     sleep 3
